@@ -365,16 +365,22 @@ class Connection extends EventEmitter
     {
         $this->lastError = 'Unhandled authentication message: ' . $message->getAuthCode();
         if ($message->getAuthCode() === $message::AUTH_CLEARTEXT_PASSWORD ||
-            $message->getAuthCode() === $message::AUTH_MD5_PASSWORD
+            $message->getAuthCode() === $message::AUTH_MD5_PASSWORD ||
+            $message->getAuthCode() === $message::AUTH_SASL
         ) {
             if ($this->password === null) {
                 $this->lastError = 'Server asked for password, but none was configured.';
             } else {
                 $passwordToSend = $this->password;
-                if ($message->getAuthCode() === $message::AUTH_MD5_PASSWORD) {
-                    $salt           = $message->getSalt();
-                    $passwordToSend = 'md5' .
-                        md5(md5($this->password . $this->parameters['user']) . $salt);
+                switch ($message->getAuthCode()){
+                    case $message::AUTH_MD5_PASSWORD:
+                        $salt           = $message->getSalt();
+                        $passwordToSend = 'md5' .
+                            md5(md5($this->password . $this->parameters['user']) . $salt);
+                        break;
+                    case $message::AUTH_SASL:
+                        $this->lastError = 'SASL(scram-sha-256) authentication method has not yet implemented!';
+                        break;
                 }
                 $passwordMessage = new PasswordMessage($passwordToSend);
                 $this->stream->write($passwordMessage->encodedMessage());

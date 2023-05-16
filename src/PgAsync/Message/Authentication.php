@@ -13,6 +13,8 @@ class Authentication extends Message
     const AUTH_GSS_CONTINUE = 8; // AuthenticationGSSContinue
     const AUTH_SSPI = 9; // AuthenticationSSPI
 
+    const AUTH_SASL = 10; // AuthenticationSASLPassword
+
     private $authCode;
 
     private $salt;
@@ -47,6 +49,9 @@ class Authentication extends Message
                 break; // AuthenticationGSSContinue
             case $this::AUTH_SSPI:
                 break; // AuthenticationSSPI
+            case $this::AUTH_SASL:
+                // todo implement scram-sha-256
+                break;
         }
 
         $this->authCode = $authCode;
@@ -64,10 +69,12 @@ class Authentication extends Message
 
     public function getSalt(): string
     {
-        if ($this->getAuthCode() !== $this::AUTH_MD5_PASSWORD) {
-            throw new \Exception('getSalt called on non-md5 authentication message');
+        if ($this->getAuthCode() === $this::AUTH_MD5_PASSWORD ||
+            $this->getAuthCode() === $this::AUTH_SASL
+        ) {
+            return $this->salt;
         }
 
-        return $this->salt;
+        throw new \Exception('getSalt called on non-md5 authentication message');
     }
 }
